@@ -3,7 +3,7 @@
     class="map_container"
     :style="{ width: width + 'px', height: height + 'px' }"
   >
-    <svg viewBox="0 0 368 268">
+    <svg viewBox="0 0 368 268" class="map_content">
       <g id="shmap">
         <g
           v-for="(map, index) in options.data"
@@ -526,7 +526,7 @@ export default {
   transform: scale(2.2) translate(0%, -27%);
   transition: transform 1s ease-out;
 }
-svg text {
+svg.map_content text {
   cursor: pointer;
 }
 svg path:hover {
@@ -541,9 +541,9 @@ svg .mapName_zoom {
   font-size: 14px;
   stroke-width: 0.5px;
   fill: #fff;
-  font-weight: bold;
+  font-weight: 800;
   stroke: #000;
-  /* text-shadow: 0 0 4px rgba(0, 0, 0, 0.4); */
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
 }
 svg .mapName_zoom {
   font-size: 6px;
