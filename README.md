@@ -1,4 +1,4 @@
-# custom-map
+# SvgMap
 
 ## Project setup
 ```
