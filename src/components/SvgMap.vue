@@ -1,157 +1,64 @@
 <template>
-  <div
-    class="map_container"
-    :style="{ width: width + 'px', height: height + 'px' }"
-  >
-    <svg viewBox="0 0 368 268" class="map_content">
+  <div class="map_container" :style="{ width: width + 'px', height: height + 'px' }">
+    <svg viewBox="0 0 368 268" :width="options.barPosition=='left'?(width - barWidth - 60):width" :height="options.barPosition=='left'?height:(height - barWidth - 60)" class="map_content">
       <g id="shmap">
-        <g
-          v-for="(map, index) in options.data"
-          :key="'group1_' + index"
-          @mouseenter="cursorIn(map.number, index)"
-          @mouseleave="cursorOut(index)"
-        >
-          <path
-            :id="map.name"
-            :d="pathMatch(map.name)"
-            :fill="mapPath[index].color"
-            stroke="rgb(255,255,255)"
-            stroke-width="0.6"
-            stroke-linejoin="round"
-          />
-          <text
-            :x="textXMatch(map.name)"
-            :y="textYMatch(map.name)"
-            class="mapName"
-            v-if="!map.zoom"
-          >
-            {{ map.name }}
-          </text>
+        <g v-for="(map, index) in options.data" :key="'group1_' + index" @mouseenter="cursorIn(map.number, index)" @mouseleave="cursorOut(index)">
+          <path :id="map.name" :d="pathMatch(map.name)" :fill="mapPath[index].color" stroke="rgb(255,255,255)" stroke-width="0.6" stroke-linejoin="round" />
+          <text :x="textXMatch(map.name)" :y="textYMatch(map.name)" class="mapName" v-if="!map.zoom">{{ map.name }}</text>
         </g>
       </g>
       <g id="zoom">
         <template v-for="(zoom, index) in options.data">
-          <g
-            :key="'group2_' + index"
-            v-if="zoom.zoom"
-            @mouseenter="cursorIn(zoom.number, index)"
-            @mouseleave="cursorOut(index)"
-          >
-            <path
-              :d="pathMatch(zoom.name)"
-              :fill="mapPath[index].color"
-              :id="zoom.name + '_zoom'"
-              stroke="#FFFFFF"
-              stroke-width="0.6"
-              stroke-linejoin="round"
-            />
-            <text
-              :x="textXMatch(zoom.name)"
-              :y="textYMatch(zoom.name)"
-              class="mapName_zoom"
-            >
-              {{ zoom.name }}
-            </text>
+          <g :key="'group2_' + index" v-if="zoom.zoom" @mouseenter="cursorIn(zoom.number, index)" @mouseleave="cursorOut(index)">
+            <path :d="pathMatch(zoom.name)" :fill="mapPath[index].color" :id="zoom.name + '_zoom'" stroke="#FFFFFF" stroke-width="0.6" stroke-linejoin="round"/>
+            <text :x="textXMatch(zoom.name)" :y="textYMatch(zoom.name)" class="mapName_zoom">{{ zoom.name }}</text>
           </g>
         </template>
       </g>
     </svg>
-    <svg
-      :height="barWidth + 60"
-      class="gradStrip"
-      version="1.1"
-      xmlns="http://www.w3.org/2000/svg"
-      @mousedown="cursorDown"
-      @mousemove="cursorDrag"
-      @mouseup="cursorUp"
-      @mouseleave="cursorUp"
-    >
+    <svg v-if="options.barPosition=='left'" :width="barWidth + 60" height="100%" class="verticalStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
+      <defs>
+        <linearGradient id="Gradient" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" :style="{ stopColor: options.colorGradient[0] }" />
+          <stop offset="100%" :style="{ stopColor: options.colorGradient[1] }" />
+        </linearGradient>
+        <clipPath id="round-corner">
+          <rect :y="greyBox[0]" x="16" :height="greyBox[1]" :width="barWidth" />
+        </clipPath>
+      </defs>
+      <rect id="rect1" x="16" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" :fill="options.barBackground"/>
+      <rect id="rect2" x="16" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
+      <text y="-16" x="2" class="text-start">{{ options.range[0] }}</text>
+      <text y="100%" x="2" class="text-end">{{ options.range[1] }}</text>
+      <g class="cursor" :style="{ transform: 'translateY(' + cursorPosition + '%)' }" v-show="cursorShow">
+        <polygon :points="(barWidth + 20) + ',0 ' + (barWidth + 26) + ',-6 ' + (barWidth + 26) + ',6'" fill="black" />
+        <text x="0" :y="barWidth + 30">{{ cursorText }}</text>
+      </g>
+      <polygon class="dragBtn btn_min" :points="(barWidth + 20) + ',0 ' + (barWidth + 30) + ',0 ' + (barWidth + 30) + ',10'" style="transform: translateY(0%)" :fill="options.colorGradient[0]" />
+      <polygon class="dragBtn btn_max" :points="(barWidth + 20) + ',0 ' + (barWidth + 30) + ',-10 ' + (barWidth + 30 + ',0')" :fill="options.colorGradient[1]" style="transform: translateY(100%)"/>
+      <text y="0" :X="barWidth + 36" class="cursorFollow" v-show="followShow">{{ dragP }}</text>
+    </svg>
+    <svg v-if="options.barPosition!=='left'" :height="barWidth + 60" class="gradStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
       <defs>
         <linearGradient id="Gradient" x1="0" x2="1" y1="0" y2="0">
           <stop offset="0%" :style="{ stopColor: options.colorGradient[0] }" />
-          <stop
-            offset="100%"
-            :style="{ stopColor: options.colorGradient[1] }"
-          />
+          <stop offset="100%" :style="{ stopColor: options.colorGradient[1] }" />
         </linearGradient>
         <clipPath id="round-corner">
           <rect :x="greyBox[0]" y="16" :width="greyBox[1]" :height="barWidth" />
         </clipPath>
       </defs>
-      <rect
-        id="rect1"
-        x="0"
-        y="16"
-        width="100%"
-        :height="barWidth"
-        :rx="options.barRadius"
-        :ry="options.barRadius"
-        :fill="options.barBackground"
-      />
-      <rect
-        id="rect2"
-        x="0"
-        y="16"
-        width="100%"
-        :height="barWidth"
-        :rx="options.barRadius"
-        :ry="options.barRadius"
-        clip-path="url(#round-corner)"
-        fill="url(#Gradient)"
-      />
-      <text x="0" y="2" class="text-start">
-        {{ options.range[0] }}
-      </text>
-      <text x="100%" y="2" class="text-end">
-        {{ options.range[1] }}
-      </text>
-      <g
-        class="cursor"
-        :style="{ transform: 'translateX(' + cursorPosition + '%)' }"
-        v-show="cursorShow"
-      >
-        <polygon
-          :points="
-            '0,' +
-              (barWidth + 20) +
-              ' -6,' +
-              (barWidth + 26) +
-              ' 6,' +
-              (barWidth + 26)
-          "
-          fill="black"
-        />
+      <rect id="rect1" x="0" y="16" width="100%" :height="barWidth" :rx="options.barRadius" :ry="options.barRadius" :fill="options.barBackground"/>
+      <rect id="rect2" x="0" y="16" width="100%" :height="barWidth" :rx="options.barRadius" :ry="options.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
+      <text x="0" y="2" class="text-start">{{ options.range[0] }}</text>
+      <text x="100%" y="2" class="text-end">{{ options.range[1] }}</text>
+      <g class="cursor" :style="{ transform: 'translateY(' + (100 - cursorPosition) + '%)' }" v-show="cursorShow">
+        <polygon :points="'0,' + (barWidth + 20) + ' -6,' + (barWidth + 26) + ' 6,' + (barWidth + 26)" fill="black" />
         <text x="0" :y="barWidth + 30">{{ cursorText }}</text>
       </g>
-      <polygon
-        class="dragBtn btn_min"
-        :points="
-          '0,' +
-            (barWidth + 20) +
-            ' 0,' +
-            (barWidth + 30) +
-            ' 10,' +
-            (barWidth + 30)
-        "
-        style="transform: translateX(0%)"
-        :fill="options.colorGradient[0]"
-      />
-      <polygon
-        class="dragBtn btn_max"
-        :points="
-          '0,' +
-            (barWidth + 20) +
-            ' -10,' +
-            (barWidth + 30) +
-            ' 0,' +
-            (barWidth + 30)
-        "
-        :fill="options.colorGradient[1]"
-        style="transform: translateX(100%)"
-      />
-      <text x="0" :y="barWidth + 36" class="cursorFollow" v-show="followShow">
-        {{ dragP }}
-      </text>
+      <polygon class="dragBtn btn_min" :points="'0,' + (barWidth + 20) + ' 0,' + (barWidth + 30) + ' 10,' + (barWidth + 30)" style="transform: translateX(0%)" :fill="options.colorGradient[0]" />
+      <polygon class="dragBtn btn_max" :points="'0,' + (barWidth + 20) + ' -10,' + (barWidth + 30) + ' 0,' + (barWidth + 30)" :fill="options.colorGradient[1]" style="transform: translateX(100%)"/>
+      <text x="0" :y="barWidth + 36" class="cursorFollow" v-show="followShow">{{ dragP }}</text>
     </svg>
   </div>
 </template>
@@ -245,7 +152,7 @@ export default {
           name: "普陀",
           color: "",
           areaInclude: true,
-          textP: [123, 135],
+          textP: [120, 135],
           path:
             "M135.995,134.246 C135.826,134.432 135.353,136.179 135.353,136.179 L134.846,136.773 L132.777,137.814 L132.274,138.557 L130.543,139.152 L126.895,140.044 C126.895,140.044 125.859,140.490 125.325,140.193 C124.792,139.895 123.121,139.598 122.854,139.449 C122.587,139.301 120.545,138.260 120.545,138.260 C120.545,138.260 120.154,137.430 120.154,137.430 C120.308,137.432 120.400,137.436 120.400,137.436 L122.349,135.744 C122.349,135.744 122.801,134.158 121.774,133.207 C120.746,132.255 120.224,131.515 120.224,131.515 C120.224,131.515 122.080,130.881 121.174,129.824 C120.268,128.766 116.176,129.824 116.176,129.824 C116.176,129.824 114.025,128.872 113.116,127.709 C112.206,126.546 112.566,126.018 112.566,126.018 L114.489,123.480 C114.489,123.480 114.234,122.877 114.049,122.161 C114.049,122.161 115.464,122.635 115.464,122.635 L117.438,121.789 C117.438,121.789 118.858,121.930 118.962,122.635 C119.066,123.339 119.664,123.833 121.998,123.903 C124.332,123.974 125.094,124.397 125.508,124.326 C125.923,124.256 128.275,124.960 129.531,125.172 C130.787,125.383 129.604,127.639 129.619,128.132 C129.633,128.626 131.618,128.132 131.618,128.132 C131.618,128.132 131.620,128.125 131.621,128.122 C131.621,128.122 131.809,128.746 131.809,128.746 L132.325,128.449 L133.392,129.043 C133.392,129.043 134.905,129.935 135.006,130.381 C135.107,130.827 135.221,131.719 135.221,131.719 C135.221,131.719 135.970,131.905 135.938,132.314 C135.907,132.723 136.165,134.061 135.995,134.246 z",
         },
@@ -253,7 +160,7 @@ export default {
           name: "静安",
           color: "",
           areaInclude: true,
-          textP: [137, 133],
+          textP: [137, 137],
           path:
             "M149.858,136.208 C149.867,136.200 149.873,136.191 149.882,136.184 C149.882,136.184 149.882,136.184 149.882,136.184 C149.892,136.177 149.903,136.171 149.913,136.164 C149.894,136.178 149.876,136.193 149.858,136.208 zM149.721,136.342 C149.726,136.336 149.734,136.331 149.739,136.324 C149.734,136.331 149.727,136.336 149.722,136.343 C149.722,136.343 149.721,136.342 149.721,136.342 zM148.093,135.138 L146.689,134.990 L145.289,134.990 L144.082,135.584 L143.041,135.882 C143.041,135.882 142.328,135.406 141.983,135.584 C141.638,135.763 140.511,135.495 140.417,135.882 C140.324,136.268 140.889,136.446 140.964,136.625 C141.040,136.803 142.211,137.368 142.211,137.368 C142.211,137.368 142.543,137.963 142.587,138.260 C142.631,138.557 143.138,139.122 143.322,139.449 C143.507,139.776 142.993,140.133 142.833,140.639 C142.673,141.144 141.814,141.679 141.814,141.679 L140.782,142.274 C140.782,142.274 139.554,142.155 139.212,142.422 C138.870,142.690 137.821,142.720 137.821,142.720 L137.183,142.994 L136.762,142.422 L135.503,141.233 C135.503,141.233 135.185,140.601 134.772,140.193 C134.289,139.714 133.700,139.449 133.700,139.449 L132.616,138.260 L132.514,138.203 L132.777,137.814 L134.846,136.773 L135.353,136.179 C135.353,136.179 135.826,134.432 135.995,134.246 C136.165,134.061 135.907,132.723 135.938,132.314 C135.970,131.905 135.221,131.719 135.221,131.719 C135.221,131.719 135.107,130.827 135.006,130.381 C134.905,129.935 133.392,129.043 133.392,129.043 L132.325,128.449 L131.809,128.746 C131.809,128.746 131.621,128.122 131.621,128.122 C131.660,127.977 132.140,126.203 132.042,125.595 C131.940,124.960 132.319,123.692 132.454,122.635 C132.590,121.577 132.748,121.295 133.916,121.366 C135.084,121.436 135.390,120.520 135.390,120.520 C135.390,120.520 135.340,118.829 135.827,118.406 C136.314,117.983 137.930,119.110 138.838,118.829 C139.746,118.547 141.824,118.406 141.824,118.406 C141.824,118.406 144.094,119.258 144.340,119.634 C144.340,119.634 143.305,121.165 143.305,121.165 C143.305,121.165 143.718,121.796 143.682,122.057 C143.645,122.317 143.285,123.432 143.201,123.543 C143.117,123.655 142.221,124.435 142.375,125.178 C142.528,125.922 142.440,127.408 142.440,127.408 C142.440,127.408 143.037,128.337 143.714,129.043 C144.391,129.750 146.609,132.314 146.609,132.314 L146.654,133.800 L147.030,134.692 L148.088,134.990 L149.510,135.733 L149.692,135.956 L148.622,135.287 L148.093,135.138 zM131.569,128.144 C131.482,128.164 131.279,128.210 131.032,128.254 C131.276,128.211 131.480,128.165 131.569,128.144 zM137.290,143.420 L137.297,143.329 L137.352,143.433 L137.290,143.420 z",
         },
@@ -261,7 +168,7 @@ export default {
           name: "长宁",
           color: "",
           areaInclude: true,
-          textP: [126, 149],
+          textP: [124, 151],
           path:
             "M137.183,144.801 L136.002,146.287 L134.118,147.625 C134.118,147.625 132.927,148.663 132.927,148.663 C132.874,148.506 132.602,148.431 131.719,148.431 C129.721,148.431 128.807,148.914 128.209,148.008 C127.611,147.102 127.113,147.162 126.697,147.585 C126.281,148.008 125.248,149.276 125.248,149.276 C125.248,149.276 123.726,150.908 122.787,150.545 C121.848,150.183 118.779,150.183 118.290,150.545 C117.801,150.908 116.303,150.968 116.303,150.968 C116.303,150.968 114.649,150.545 115.266,149.699 C115.884,148.854 117.006,148.189 116.703,147.585 C116.399,146.981 116.140,145.470 116.140,145.470 C116.140,145.470 115.178,144.323 116.078,143.356 C116.977,142.389 117.084,141.181 117.002,140.819 C116.920,140.456 115.894,139.550 115.952,139.127 C115.982,138.913 116.475,138.266 116.954,137.679 C117.996,137.422 119.567,137.421 120.154,137.430 C120.154,137.430 120.545,138.260 120.545,138.260 C120.545,138.260 122.587,139.301 122.854,139.449 C123.121,139.598 124.792,139.895 125.325,140.193 C125.859,140.490 126.895,140.044 126.895,140.044 L130.543,139.152 L132.274,138.557 L132.514,138.203 L132.616,138.260 L133.700,139.449 C133.700,139.449 134.289,139.714 134.772,140.193 C135.185,140.601 135.503,141.233 135.503,141.233 L136.762,142.422 L137.309,143.166 L137.183,144.801 zM120.316,137.433 C120.309,137.433 120.297,137.433 120.289,137.433 C120.301,137.433 120.306,137.433 120.316,137.433 z",
         },
@@ -277,7 +184,7 @@ export default {
           name: "黄浦",
           color: "",
           areaInclude: true,
-          textP: [144, 146],
+          textP: [149, 146],
           path:
             "M144.082,135.584 L145.289,134.990 L146.689,134.990 L148.093,135.138 L148.622,135.287 L149.692,135.956 L149.873,136.179 C149.873,136.179 149.882,136.184 149.882,136.184 C149.531,136.465 149.388,136.869 149.884,137.436 C150.746,138.422 152.601,142.017 152.545,142.933 C152.489,143.849 152.373,145.541 151.146,146.316 C149.920,147.092 148.283,148.078 147.223,148.854 C146.373,149.475 145.871,149.147 145.767,149.610 C145.767,149.610 145.367,149.409 145.367,149.409 C145.367,149.409 143.742,148.904 143.416,148.517 C143.089,148.131 141.702,147.358 141.452,147.179 C141.202,147.001 139.851,146.287 139.851,146.287 L138.941,145.098 L137.686,144.058 L137.130,143.017 L137.821,142.720 C137.821,142.720 138.870,142.690 139.212,142.422 C139.554,142.155 140.782,142.274 140.782,142.274 L141.814,141.679 C141.814,141.679 142.673,141.144 142.833,140.639 C142.993,140.133 143.507,139.776 143.322,139.449 C143.138,139.122 142.631,138.557 142.587,138.260 C142.543,137.963 142.211,137.368 142.211,137.368 C142.211,137.368 141.040,136.803 140.964,136.625 C140.889,136.446 140.324,136.268 140.417,135.882 C140.511,135.495 141.638,135.763 141.983,135.584 C142.328,135.406 143.041,135.882 143.041,135.882 L144.082,135.584 z",
         },
@@ -293,7 +200,7 @@ export default {
           name: "杨浦",
           color: "",
           areaInclude: true,
-          textP: [158, 125],
+          textP: [158, 120],
           path:
             "M149.570,120.061 L149.869,120.097 L150.844,119.251 C150.844,119.251 150.833,116.080 150.706,114.600 C150.579,113.120 150.681,113.754 150.681,113.754 L154.591,110.794 C154.591,110.794 154.598,110.760 154.598,110.760 C155.075,110.950 155.446,111.020 156.103,111.217 C157.279,111.569 160.894,112.697 161.675,113.754 C162.456,114.811 164.286,114.741 164.249,116.291 C164.211,117.842 166.100,122.564 166.486,124.326 C166.871,126.088 166.623,128.978 166.136,129.401 C165.649,129.824 163.865,131.445 161.239,132.784 C159.143,133.853 156.781,134.831 155.525,134.968 C155.525,134.968 155.580,133.949 155.580,133.949 L155.540,132.611 C155.540,132.611 155.164,131.719 154.626,131.273 C154.088,130.827 154.420,130.233 154.420,130.233 C154.420,130.233 154.683,129.242 154.726,128.746 C154.770,128.251 153.991,127.557 153.991,127.557 C153.991,127.557 152.478,127.656 152.408,127.259 C152.338,126.863 151.618,126.169 151.660,125.624 C151.702,125.079 151.279,124.584 151.279,124.584 C151.279,124.584 149.959,123.345 149.302,122.800 C148.644,122.255 149.594,120.867 149.594,120.867 L149.570,120.061 z",
         },
@@ -313,6 +220,7 @@ export default {
       followShow: false,
       filterArray: this.options.data,
       diffDirection: true,
+      strip: this.options.barPosition=="left"?'.verticalStrip':'.gradStrip'
     };
   },
   computed: {
@@ -447,10 +355,12 @@ export default {
       );
     },
     cursorDown(evt) {
-      const svg = document.querySelector(".gradStrip");
+      const svg = document.querySelector(this.strip);
       const targetCls = evt.target.classList;
+      let mp = 0;
       let pt = svg.createSVGPoint();
       let startP = 0;
+      let Regex;
       if (targetCls.contains("dragBtn")) {
         clearTimeout(this.timer2);
         this.followShow = true;
@@ -458,11 +368,16 @@ export default {
         pt.x = evt.clientX;
         pt.y = evt.clientY;
         pt = pt.matrixTransform(svg.getScreenCTM().inverse());
+        if(this.options.barPosition=='left'){
+          mp = pt.y;
+          Regex = /translateY\((-?\d+(?:\.\d*)?)%\)/;
+        } else {
+          mp = pt.x;
+          Regex = /translateX\((-?\d+(?:\.\d*)?)%\)/;
+        }
         startP =
-          this.dragTarget.style.transform.match(
-            /translateX\((-?\d+(?:\.\d*)?)%\)/
-          )[1] / 100;
-        this.offestP = startP - pt.x / this.width;
+          this.dragTarget.style.transform.match(Regex)[1] / 100;
+        this.offestP = startP - mp / this.width;
       } else {
         this.dragTarget = null;
       }
@@ -474,12 +389,14 @@ export default {
       }, 400);
     },
     cursorDrag(evt) {
-      const svg = document.querySelector(".gradStrip");
+      const svg = document.querySelector(this.strip);
       const numFollow = document.querySelector(".cursorFollow");
+      let mp = 0;
       if (this.dragTarget !== null) {
         let pt = svg.createSVGPoint();
         let distance = 0;
         let clampRange = JSON.parse(JSON.stringify(this.clampArray));
+        let transText = "translateX(";
         let rangeFilter = [
           this.clampArray[0] * (this.options.range[1] - this.options.range[0]) +
             this.options.range[0],
@@ -489,23 +406,28 @@ export default {
         pt.x = evt.clientX;
         pt.y = evt.clientY;
         pt = pt.matrixTransform(svg.getScreenCTM().inverse());
-        distance = pt.x / this.width + this.offestP;
+        if(this.options.barPosition=='left'){
+          mp = pt.y;
+          transText = "translateY(";
+        } else {
+          mp = pt.x;
+          transText = "translateX(";
+        }
+        distance = mp / this.width + this.offestP;
         if (this.dragTarget.classList.contains("btn_max")) {
           this.dragP = this.numberShow(this.clampArray[1]);
-          let temp =
-            distance - this.clampArray[0] < 0 ? this.clampArray[0] : distance;
+          let temp = distance - this.clampArray[0] < 0 ? this.clampArray[0] : distance;
           this.clampArray[1] = temp.clamp(0, 1);
           clampRange[1] = 1;
         } else {
           this.dragP = this.numberShow(this.clampArray[0]);
-          let temp =
-            distance - this.clampArray[1] > 0 ? this.clampArray[1] : distance;
+          let temp = distance - this.clampArray[1] > 0 ? this.clampArray[1] : distance;
           this.clampArray[0] = temp.clamp(0, 1);
           clampRange[0] = 0;
         }
         distance = distance.clamp(clampRange[0], clampRange[1]);
-        this.dragTarget.style.transform = "translateX(" + distance * 100 + "%)";
-        numFollow.style.transform = "translateX(" + distance * 100 + "%)";
+        this.dragTarget.style.transform = transText + distance * 100 + "%)";
+        numFollow.style.transform = transText + distance * 100 + "%)";
         this.greyBox = [
           this.clampArray[0] * 100 + "%",
           (this.clampArray[1] - this.clampArray[0]) * 100 + "%",
@@ -522,55 +444,68 @@ export default {
 </script>
 
 <style lang="css">
-#zoom {
-  transform: scale(2.2) translate(0%, -27%);
-  transition: transform 1s ease-out;
-}
-svg.map_content text {
-  cursor: pointer;
-}
-svg path:hover {
-  transition-duration: 0ms;
-}
-svg path {
-  transition: fill 500ms ease-out;
-}
-svg .mapName,
-svg .mapName_zoom {
-  text-anchor: middle;
-  font-size: 14px;
-  stroke-width: 0.5px;
-  fill: #fff;
-  font-weight: 800;
-  stroke: #000;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
-}
-svg .mapName_zoom {
-  font-size: 6px;
-  stroke-width: 0.25px;
-}
-.gradStrip {
-  padding: 10px;
-  width: calc(100% - 20px);
-}
-.gradStrip text {
-  alignment-baseline: hanging;
-  user-select: none;
-}
-.text-start {
-  text-anchor: start;
-}
-.text-end {
-  text-anchor: end;
-}
-.cursor {
-  transition: all 400ms ease-out;
-}
-.cursor text,
-text.cursorFollow {
-  text-anchor: middle;
-}
-.dragBtn {
-  cursor: ew-resize;
-}
+  .map_container>svg{
+    display: inline-block;
+  }
+  #zoom {
+    transform: scale(2.2) translate(0%, -27%);
+    transition: transform 1s ease-out;
+  }
+  svg.map_content text {
+    cursor: pointer;
+  }
+  svg path:hover {
+    transition-duration: 0ms;
+  }
+  svg path {
+    transition: fill 500ms ease-out;
+  }
+  svg .mapName,
+  svg .mapName_zoom {
+    text-anchor: middle;
+    font-size: 16px;
+    stroke-width: 0.5px;
+    fill: #fff;
+    font-weight: 800;
+    stroke: #000;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+  }
+  svg .mapName_zoom {
+    font-size: 8px;
+    stroke-width: 0.25px;
+  }
+  .gradStrip {
+    padding: 10px;
+    width: calc(100% - 20px);
+  }
+  .verticalStrip{
+    transform: scaleY(-1);
+  }
+  .gradStrip text, .verticalStrip text {
+    alignment-baseline: hanging;
+    user-select: none;
+  }
+  .text-start {
+    text-anchor: start;
+  }
+  .text-end {
+    text-anchor: end;
+  }
+  .verticalStrip text{
+    transform: scaleY(-1);
+    text-anchor: start;
+  }
+  .cursor {
+    transition: all 400ms ease-out;
+  }
+  .cursor text,
+  text.cursorFollow {
+    text-anchor: middle;
+  }
+  .gradStrip .dragBtn {
+    cursor: ew-resize;
+  }
+  .verticalStrip .dragBtn {
+    cursor: ns-resize;
+  }
 </style>
