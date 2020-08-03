@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <svgmap :options="map" :width="500" :height="500"></svgmap>
+    <svgmap :options="map" :width="500" :height="300"></svgmap>
   </div>
 </template>
 
@@ -94,7 +94,7 @@ export default {
         highlight: "#06f092",
         gradWidth: 10,
         data: mapData,
-        barPosition: "left",
+        barPosition: "side",
         barRadius: 5,
         barBackground: "#ccc"
       },

@@ -1,6 +1,6 @@
 <template>
   <div class="map_container" :style="{ width: width + 'px', height: height + 'px' }">
-    <svg viewBox="0 0 368 268" :width="options.barPosition=='left'?(width - barWidth - 60):width" :height="options.barPosition=='left'?height:(height - barWidth - 60)" class="map_content">
+    <svg viewBox="0 0 368 268" :width="options.barPosition=='side'?(width - barWidth - 80):width" :height="options.barPosition=='side'?height:(height - barWidth - 60)" class="map_content">
       <g id="shmap">
         <g v-for="(map, index) in options.data" :key="'group1_' + index" @mouseenter="cursorIn(map.number, index)" @mouseleave="cursorOut(index)">
           <path :id="map.name" :d="pathMatch(map.name)" :fill="mapPath[index].color" stroke="rgb(255,255,255)" stroke-width="0.6" stroke-linejoin="round" />
@@ -16,29 +16,31 @@
         </template>
       </g>
     </svg>
-    <svg v-if="options.barPosition=='left'" :width="barWidth + 60" height="100%" class="verticalStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
+    <svg v-if="options.barPosition=='side'" :width="barWidth + 80" class="verticalStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
       <defs>
         <linearGradient id="Gradient" x1="0" x2="0" y1="0" y2="1">
           <stop offset="0%" :style="{ stopColor: options.colorGradient[0] }" />
           <stop offset="100%" :style="{ stopColor: options.colorGradient[1] }" />
         </linearGradient>
         <clipPath id="round-corner">
-          <rect :y="greyBox[0]" x="16" :height="greyBox[1]" :width="barWidth" />
+          <rect :y="greyBox[0]" x="32" :height="greyBox[1]" :width="barWidth" />
         </clipPath>
       </defs>
-      <rect id="rect1" x="16" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" :fill="options.barBackground"/>
-      <rect id="rect2" x="16" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
-      <text y="-16" x="2" class="text-start">{{ options.range[0] }}</text>
-      <text y="100%" x="2" class="text-end">{{ options.range[1] }}</text>
+      <rect id="rect1" x="32" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" :fill="options.barBackground"/>
+      <rect id="rect2" x="32" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
+      <text y="0" x="30" class="text-start">{{ options.range[0] }}</text>
+      <text y="100%" x="30" class="text-end">{{ options.range[1] }}</text>
       <g class="cursor" :style="{ transform: 'translateY(' + cursorPosition + '%)' }" v-show="cursorShow">
-        <polygon :points="(barWidth + 20) + ',0 ' + (barWidth + 26) + ',-6 ' + (barWidth + 26) + ',6'" fill="black" />
-        <text x="0" :y="barWidth + 30">{{ cursorText }}</text>
+        <polygon :points="(barWidth + 34) + ',0 ' + (barWidth + 40) + ',-6 ' + (barWidth + 40) + ',6'" fill="black" />
+        <text y="-5" :style="{ transform: 'scaleY(-1) translateX(' + (barWidth + 46) + 'px)'}" >{{ cursorText }}</text>
       </g>
-      <polygon class="dragBtn btn_min" :points="(barWidth + 20) + ',0 ' + (barWidth + 30) + ',0 ' + (barWidth + 30) + ',10'" style="transform: translateY(0%)" :fill="options.colorGradient[0]" />
-      <polygon class="dragBtn btn_max" :points="(barWidth + 20) + ',0 ' + (barWidth + 30) + ',-10 ' + (barWidth + 30 + ',0')" :fill="options.colorGradient[1]" style="transform: translateY(100%)"/>
-      <text y="0" :X="barWidth + 36" class="cursorFollow" v-show="followShow">{{ dragP }}</text>
+      <polygon class="dragBtn btn_min" :points="(barWidth + 34) + ',0 ' + (barWidth + 44) + ',0 ' + (barWidth + 44) + ',10'" style="transform: translateY(0%)" :fill="options.colorGradient[0]" />
+      <polygon class="dragBtn btn_max" :points="(barWidth + 34) + ',0 ' + (barWidth + 44) + ',-10 ' + (barWidth + 44) + ',0'" :fill="options.colorGradient[1]" style="transform: translateY(100%)"/>
+      <g :style="{ transform: 'translateY(' + perDistance + '%)' }">
+        <text y="-6" class="cursorFollow" v-show="followShow" :style="{ transform: 'scaleY(-1) translateX(' + (barWidth + 56) + 'px)' }">{{ dragP }}</text>
+      </g>
     </svg>
-    <svg v-if="options.barPosition!=='left'" :height="barWidth + 60" class="gradStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
+    <svg v-if="options.barPosition!=='side'" :height="barWidth + 60" class="gradStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
       <defs>
         <linearGradient id="Gradient" x1="0" x2="1" y1="0" y2="0">
           <stop offset="0%" :style="{ stopColor: options.colorGradient[0] }" />
@@ -52,13 +54,13 @@
       <rect id="rect2" x="0" y="16" width="100%" :height="barWidth" :rx="options.barRadius" :ry="options.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
       <text x="0" y="2" class="text-start">{{ options.range[0] }}</text>
       <text x="100%" y="2" class="text-end">{{ options.range[1] }}</text>
-      <g class="cursor" :style="{ transform: 'translateY(' + (100 - cursorPosition) + '%)' }" v-show="cursorShow">
+      <g class="cursor" :style="{ transform: 'translateX(' + (100 - cursorPosition) + '%)' }" v-show="cursorShow">
         <polygon :points="'0,' + (barWidth + 20) + ' -6,' + (barWidth + 26) + ' 6,' + (barWidth + 26)" fill="black" />
         <text x="0" :y="barWidth + 30">{{ cursorText }}</text>
       </g>
       <polygon class="dragBtn btn_min" :points="'0,' + (barWidth + 20) + ' 0,' + (barWidth + 30) + ' 10,' + (barWidth + 30)" style="transform: translateX(0%)" :fill="options.colorGradient[0]" />
       <polygon class="dragBtn btn_max" :points="'0,' + (barWidth + 20) + ' -10,' + (barWidth + 30) + ' 0,' + (barWidth + 30)" :fill="options.colorGradient[1]" style="transform: translateX(100%)"/>
-      <text x="0" :y="barWidth + 36" class="cursorFollow" v-show="followShow">{{ dragP }}</text>
+      <text x="0" :y="barWidth + 36" class="cursorFollow" v-show="followShow" :style="{ transform: 'translateX(' + perDistance + '%)' }">{{ dragP }}</text>
     </svg>
   </div>
 </template>
@@ -220,7 +222,9 @@ export default {
       followShow: false,
       filterArray: this.options.data,
       diffDirection: true,
-      strip: this.options.barPosition=="left"?'.verticalStrip':'.gradStrip'
+      strip: this.options.barPosition=="side"?'.verticalStrip':'.gradStrip',
+      perDistance: 0,
+      baseLength: this.options.barPosition=="side"? this.height: this.width,
     };
   },
   computed: {
@@ -368,16 +372,15 @@ export default {
         pt.x = evt.clientX;
         pt.y = evt.clientY;
         pt = pt.matrixTransform(svg.getScreenCTM().inverse());
-        if(this.options.barPosition=='left'){
+        if(this.options.barPosition=='side'){
           mp = pt.y;
           Regex = /translateY\((-?\d+(?:\.\d*)?)%\)/;
         } else {
           mp = pt.x;
           Regex = /translateX\((-?\d+(?:\.\d*)?)%\)/;
         }
-        startP =
-          this.dragTarget.style.transform.match(Regex)[1] / 100;
-        this.offestP = startP - mp / this.width;
+        startP = this.dragTarget.style.transform.match(Regex)[1] / 100;
+        this.offestP = startP - mp / this.baseLength;
       } else {
         this.dragTarget = null;
       }
@@ -390,13 +393,14 @@ export default {
     },
     cursorDrag(evt) {
       const svg = document.querySelector(this.strip);
-      const numFollow = document.querySelector(".cursorFollow");
+      // const numFollow = document.querySelector(".cursorFollow");
       let mp = 0;
       if (this.dragTarget !== null) {
         let pt = svg.createSVGPoint();
         let distance = 0;
         let clampRange = JSON.parse(JSON.stringify(this.clampArray));
         let transText = "translateX(";
+        // const transAdd = " scaleY(-1)";
         let rangeFilter = [
           this.clampArray[0] * (this.options.range[1] - this.options.range[0]) +
             this.options.range[0],
@@ -406,14 +410,14 @@ export default {
         pt.x = evt.clientX;
         pt.y = evt.clientY;
         pt = pt.matrixTransform(svg.getScreenCTM().inverse());
-        if(this.options.barPosition=='left'){
+        if(this.options.barPosition=='side'){
           mp = pt.y;
           transText = "translateY(";
         } else {
           mp = pt.x;
           transText = "translateX(";
         }
-        distance = mp / this.width + this.offestP;
+        distance = mp / this.baseLength + this.offestP;
         if (this.dragTarget.classList.contains("btn_max")) {
           this.dragP = this.numberShow(this.clampArray[1]);
           let temp = distance - this.clampArray[0] < 0 ? this.clampArray[0] : distance;
@@ -425,9 +429,8 @@ export default {
           this.clampArray[0] = temp.clamp(0, 1);
           clampRange[0] = 0;
         }
-        distance = distance.clamp(clampRange[0], clampRange[1]);
-        this.dragTarget.style.transform = transText + distance * 100 + "%)";
-        numFollow.style.transform = transText + distance * 100 + "%)";
+        this.perDistance = distance.clamp(clampRange[0], clampRange[1]) * 100;
+        this.dragTarget.style.transform = transText + this.perDistance + "%)";
         this.greyBox = [
           this.clampArray[0] * 100 + "%",
           (this.clampArray[1] - this.clampArray[0]) * 100 + "%",
@@ -480,6 +483,8 @@ export default {
   }
   .verticalStrip{
     transform: scaleY(-1);
+    padding: 10px 0;
+    height: calc(100% - 20px);
   }
   .gradStrip text, .verticalStrip text {
     alignment-baseline: hanging;
@@ -491,10 +496,6 @@ export default {
   .text-end {
     text-anchor: end;
   }
-  .verticalStrip text{
-    transform: scaleY(-1);
-    text-anchor: start;
-  }
   .cursor {
     transition: all 400ms ease-out;
   }
@@ -502,10 +503,24 @@ export default {
   text.cursorFollow {
     text-anchor: middle;
   }
+  .verticalStrip>text.cursorFollow {
+    text-anchor: initial;
+  }
   .gradStrip .dragBtn {
     cursor: ew-resize;
   }
   .verticalStrip .dragBtn {
     cursor: ns-resize;
+  }
+  .verticalStrip .text-start{
+    transform: scaleY(-1) translateY(-12px);
+    text-anchor: end;
+  }
+  .verticalStrip .text-end{
+    transform: translateY(calc(200% - 2px)) scaleY(-1);
+  }
+  .verticalStrip .cursor text{
+    text-anchor: start;
+    transform: scaleY(-1) translateX(56px);
   }
 </style>
