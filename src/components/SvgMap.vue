@@ -1,21 +1,24 @@
 <template>
   <div class="map_container" :style="{ width: width + 'px', height: height + 'px' }">
-    <svg viewBox="0 0 368 268" :width="options.barPosition=='side'?(width - barWidth - 80):width" :height="options.barPosition=='side'?height:(height - barWidth - 60)" class="map_content">
+    <svg viewBox="0 0 368 268" :width="options.barPosition=='side'?(width - barWidth - 80):width" :height="options.barPosition=='side'?height:(height - barWidth - 60)" class="map_content" @mousemove="cursorFollow">
       <g id="shmap">
-        <g v-for="(map, index) in options.data" :key="'group1_' + index" @mouseenter="cursorIn(map.number, index)" @mouseleave="cursorOut(index)">
+        <g v-for="(map, index) in options.data" :key="'group1_' + index" @mouseenter="cursorIn(map.number, index, map.name)" @mouseleave="cursorOut(index)">
           <path :id="map.name" :d="pathMatch(map.name)" :fill="mapPath[index].color" stroke="rgb(255,255,255)" stroke-width="0.6" stroke-linejoin="round" />
           <text :x="textXMatch(map.name)" :y="textYMatch(map.name)" class="mapName" v-if="!map.zoom">{{ map.name }}</text>
         </g>
       </g>
       <g id="zoom">
         <template v-for="(zoom, index) in options.data">
-          <g :key="'group2_' + index" v-if="zoom.zoom" @mouseenter="cursorIn(zoom.number, index)" @mouseleave="cursorOut(index)">
+          <g :key="'group2_' + index" v-if="zoom.zoom" @mouseenter="cursorIn(zoom.number, index, zoom.name)" @mouseleave="cursorOut(index)">
             <path :d="pathMatch(zoom.name)" :fill="mapPath[index].color" :id="zoom.name + '_zoom'" stroke="#FFFFFF" stroke-width="0.6" stroke-linejoin="round"/>
             <text :x="textXMatch(zoom.name)" :y="textYMatch(zoom.name)" class="mapName_zoom">{{ zoom.name }}</text>
           </g>
         </template>
       </g>
     </svg>
+    <div class="tooltip" :style="'left:'+ tooltip.x +'px; top:'+ tooltip.y +'px'" v-show="cursorShow">
+      <span>{{tooltip.name}}:</span><span>{{cursorText}}</span>
+    </div>
     <svg v-if="options.barPosition=='side'" :width="barWidth + 80" class="verticalStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
       <defs>
         <linearGradient id="Gradient" x1="0" x2="0" y1="0" y2="1">
@@ -225,6 +228,11 @@ export default {
       strip: this.options.barPosition=="side"?'.verticalStrip':'.gradStrip',
       perDistance: 0,
       baseLength: this.options.barPosition=="side"? this.height: this.width,
+      tooltip:{
+        name: '',
+        x: 0,
+        y: 0,
+      },
     };
   },
   computed: {
@@ -332,14 +340,23 @@ export default {
       });
       return y;
     },
-    cursorIn(num, idx) {
+    cursorFollow(event){
+      if(this.cursorShow){
+        const svg = document.querySelector(".map_content");
+        let pt = svg.createSVGPoint();
+        pt.x = event.clientX;
+        pt.y = event.clientY;
+        pt = pt.matrixTransform(svg.getScreenCTM().inverse());
+        this.tooltip.x = pt.x;
+        this.tooltip.y = pt.y;
+      }
+    },
+    cursorIn(num, idx, name) {
       clearTimeout(this.timer);
       this.cursorShow = true;
       this.cursorText = num;
-      this.cursorPosition =
-        ((num - this.options.range[0]) /
-          (this.options.range[1] - this.options.range[0])) *
-        100;
+      this.tooltip.name = name;
+      this.cursorPosition =((num - this.options.range[0]) / (this.options.range[1] - this.options.range[0])) * 100;
       this.mapPath[idx].color = this.options.highlight;
     },
     cursorOut(idx) {
@@ -447,6 +464,19 @@ export default {
 </script>
 
 <style lang="css">
+  .map_container{
+    position: relative;
+  }
+  .map_container>.tooltip{
+    position: absolute;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    transform: translate(0%, -100%);
+    color: #fff;
+    border-radius: 4px;
+    /* transition: all ease-out 100ms; */
+    pointer-events: none;
+  }
   .map_container>svg{
     display: inline-block;
   }
@@ -523,4 +553,9 @@ export default {
     text-anchor: start;
     transform: scaleY(-1) translateX(56px);
   }
+  .verticalStrip #rect1, .verticalStrip #rect2{
+    /* height: calc(100% -20px); */
+    /* height: 100%; */
+  }
+
 </style>
