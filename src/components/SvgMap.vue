@@ -1,70 +1,70 @@
 <template>
   <div class="map_container" :style="{ width: width + 'px', height: height + 'px' }">
-    <svg viewBox="0 0 368 268" :width="options.barPosition=='side'?(width - barWidth - 80):width" :height="options.barPosition=='side'?height:(height - barWidth - 60)" class="map_content" @mousemove="cursorFollow">
-      <g id="shmap">
-        <g v-for="(map, index) in options.data" :key="'group1_' + index" @mouseenter="cursorIn(map.number, index, map.name)" @mouseleave="cursorOut(index)">
-          <path :id="map.name" :d="pathMatch(map.name)" :fill="mapPath[index].color" stroke="rgb(255,255,255)" stroke-width="0.6" stroke-linejoin="round" />
+    <svg viewBox="0 0 368 268" :width="mapBox.x" :height="mapBox.y" class="map_content" @mousemove="cursorFollow">
+      <g id="shmap" @mouseenter="toolTipLoopStop" @mouseleave="toolTipLoop(1000)">
+        <g v-for="(map, index) in mapData" :key="'group1_' + index" @mouseenter="cursorIn(map.number, index, map.name)" @mouseleave="cursorOut(index)" :id="map.name">
+          <path :d="pathMatch(map.name)" :fill="mapPath[index].color" stroke="rgb(255,255,255)" stroke-width="0.6" stroke-linejoin="round" />
           <text :x="textXMatch(map.name)" :y="textYMatch(map.name)" class="mapName" v-if="!map.zoom">{{ map.name }}</text>
         </g>
       </g>
-      <g id="zoom">
-        <template v-for="(zoom, index) in options.data">
-          <g :key="'group2_' + index" v-if="zoom.zoom" @mouseenter="cursorIn(zoom.number, index, zoom.name)" @mouseleave="cursorOut(index)">
-            <path :d="pathMatch(zoom.name)" :fill="mapPath[index].color" :id="zoom.name + '_zoom'" stroke="#FFFFFF" stroke-width="0.6" stroke-linejoin="round"/>
+      <g id="zoom" @mouseenter="toolTipLoopStop" @mouseleave="toolTipLoop(1000)">
+        <template v-for="(zoom, index) in mapData">
+          <g :key="'group2_' + index" v-if="zoom.zoom" @mouseenter="cursorIn(zoom.number, index, zoom.name)" @mouseleave="cursorOut(index)" :id="zoom.name + '_zoom'">
+            <path :d="pathMatch(zoom.name)" :fill="mapPath[index].color" stroke="#FFFFFF" stroke-width="0.6" stroke-linejoin="round"/>
             <text :x="textXMatch(zoom.name)" :y="textYMatch(zoom.name)" class="mapName_zoom">{{ zoom.name }}</text>
           </g>
         </template>
       </g>
     </svg>
-    <div class="tooltip" :style="'left:'+ tooltip.x +'px; top:'+ tooltip.y +'px'" v-show="cursorShow">
-      <span>{{tooltip.name}}:</span><span>{{cursorText}}</span>
-    </div>
-    <svg v-if="options.barPosition=='side'" :width="barWidth + 80" class="verticalStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
+    <svg :viewBox="verticalViewBox" v-if="svgOptions.barPosition=='side'" :width="barWidth + 80" class="verticalStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
       <defs>
         <linearGradient id="Gradient" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" :style="{ stopColor: options.colorGradient[0] }" />
-          <stop offset="100%" :style="{ stopColor: options.colorGradient[1] }" />
+          <stop offset="0%" :style="{ stopColor: svgOptions.colorGradient[0] }" />
+          <stop offset="100%" :style="{ stopColor: svgOptions.colorGradient[1] }" />
         </linearGradient>
         <clipPath id="round-corner">
           <rect :y="greyBox[0]" x="32" :height="greyBox[1]" :width="barWidth" />
         </clipPath>
       </defs>
-      <rect id="rect1" x="32" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" :fill="options.barBackground"/>
-      <rect id="rect2" x="32" y="0" height="100%" :width="barWidth" :rx="options.barRadius" :ry="options.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
-      <text y="0" x="30" class="text-start">{{ options.range[0] }}</text>
-      <text y="100%" x="30" class="text-end">{{ options.range[1] }}</text>
+      <rect id="rect1" x="32" y="0" height="100%" :width="barWidth" :rx="svgOptions.barRadius" :ry="svgOptions.barRadius" :fill="svgOptions.barBackground"/>
+      <rect id="rect2" x="32" y="0" height="100%" :width="barWidth" :rx="svgOptions.barRadius" :ry="svgOptions.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
+      <text y="0" x="30" class="text-start">{{ svgOptions.range[0] }}</text>
+      <text y="100%" x="30" class="text-end">{{ svgOptions.range[1] }}</text>
       <g class="cursor" :style="{ transform: 'translateY(' + cursorPosition + '%)' }" v-show="cursorShow">
         <polygon :points="(barWidth + 34) + ',0 ' + (barWidth + 40) + ',-6 ' + (barWidth + 40) + ',6'" fill="black" />
         <text y="-5" :style="{ transform: 'scaleY(-1) translateX(' + (barWidth + 46) + 'px)'}" >{{ cursorText }}</text>
       </g>
-      <polygon class="dragBtn btn_min" :points="(barWidth + 34) + ',0 ' + (barWidth + 44) + ',0 ' + (barWidth + 44) + ',10'" style="transform: translateY(0%)" :fill="options.colorGradient[0]" />
-      <polygon class="dragBtn btn_max" :points="(barWidth + 34) + ',0 ' + (barWidth + 44) + ',-10 ' + (barWidth + 44) + ',0'" :fill="options.colorGradient[1]" style="transform: translateY(100%)"/>
+      <polygon class="dragBtn btn_min" :points="(barWidth + 34) + ',0 ' + (barWidth + 44) + ',0 ' + (barWidth + 44) + ',-10'" style="transform: translateY(0%)" :fill="svgOptions.colorGradient[0]" />
+      <polygon class="dragBtn btn_max" :points="(barWidth + 34) + ',0 ' + (barWidth + 44) + ',10 ' + (barWidth + 44) + ',0'" :fill="svgOptions.colorGradient[1]" style="transform: translateY(100%)"/>
       <g :style="{ transform: 'translateY(' + perDistance + '%)' }">
         <text y="-6" class="cursorFollow" v-show="followShow" :style="{ transform: 'scaleY(-1) translateX(' + (barWidth + 56) + 'px)' }">{{ dragP }}</text>
       </g>
     </svg>
-    <svg v-if="options.barPosition!=='side'" :height="barWidth + 60" class="gradStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
+    <svg :viewBox="horizonalViewBox" v-if="svgOptions.barPosition!=='side'" :height="barWidth + 60" class="gradStrip" version="1.1" xmlns="http://www.w3.org/2000/svg" @mousedown="cursorDown" @mousemove="cursorDrag" @mouseup="cursorUp" @mouseleave="cursorUp">
       <defs>
         <linearGradient id="Gradient" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" :style="{ stopColor: options.colorGradient[0] }" />
-          <stop offset="100%" :style="{ stopColor: options.colorGradient[1] }" />
+          <stop offset="0%" :style="{ stopColor: svgOptions.colorGradient[0] }" />
+          <stop offset="100%" :style="{ stopColor: svgOptions.colorGradient[1] }" />
         </linearGradient>
         <clipPath id="round-corner">
           <rect :x="greyBox[0]" y="16" :width="greyBox[1]" :height="barWidth" />
         </clipPath>
       </defs>
-      <rect id="rect1" x="0" y="16" width="100%" :height="barWidth" :rx="options.barRadius" :ry="options.barRadius" :fill="options.barBackground"/>
-      <rect id="rect2" x="0" y="16" width="100%" :height="barWidth" :rx="options.barRadius" :ry="options.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
-      <text x="0" y="2" class="text-start">{{ options.range[0] }}</text>
-      <text x="100%" y="2" class="text-end">{{ options.range[1] }}</text>
+      <rect id="rect1" x="0" y="16" width="100%" :height="barWidth" :rx="svgOptions.barRadius" :ry="svgOptions.barRadius" :fill="svgOptions.barBackground"/>
+      <rect id="rect2" x="0" y="16" width="100%" :height="barWidth" :rx="svgOptions.barRadius" :ry="svgOptions.barRadius" clip-path="url(#round-corner)" fill="url(#Gradient)" />
+      <text x="0" y="2" class="text-start">{{ svgOptions.range[0] }}</text>
+      <text x="100%" y="2" class="text-end">{{ svgOptions.range[1] }}</text>
       <g class="cursor" :style="{ transform: 'translateX(' + (100 - cursorPosition) + '%)' }" v-show="cursorShow">
         <polygon :points="'0,' + (barWidth + 20) + ' -6,' + (barWidth + 26) + ' 6,' + (barWidth + 26)" fill="black" />
         <text x="0" :y="barWidth + 30">{{ cursorText }}</text>
       </g>
-      <polygon class="dragBtn btn_min" :points="'0,' + (barWidth + 20) + ' 0,' + (barWidth + 30) + ' 10,' + (barWidth + 30)" style="transform: translateX(0%)" :fill="options.colorGradient[0]" />
-      <polygon class="dragBtn btn_max" :points="'0,' + (barWidth + 20) + ' -10,' + (barWidth + 30) + ' 0,' + (barWidth + 30)" :fill="options.colorGradient[1]" style="transform: translateX(100%)"/>
+      <polygon class="dragBtn btn_min" :points="'0,' + (barWidth + 20) + ' 0,' + (barWidth + 30) + ' 10,' + (barWidth + 30)" style="transform: translateX(0%)" :fill="svgOptions.colorGradient[0]" />
+      <polygon class="dragBtn btn_max" :points="'0,' + (barWidth + 20) + ' -10,' + (barWidth + 30) + ' 0,' + (barWidth + 30)" :fill="svgOptions.colorGradient[1]" style="transform: translateX(100%)"/>
       <text x="0" :y="barWidth + 36" class="cursorFollow" v-show="followShow" :style="{ transform: 'translateX(' + perDistance + '%)' }">{{ dragP }}</text>
     </svg>
+    <div class="tooltip" :class="{'animated':toolTipAnimated}" :style="'left:'+ tooltip.x/368*mapBox.x +'px; top:'+ tooltip.y/268*mapBox.y +'px'" v-show="cursorShow">
+      <span>{{tooltip.name}}:</span><span>{{cursorText}}</span>
+    </div>
   </div>
 </template>
 
@@ -77,8 +77,9 @@ export default {
     options: Object,
     width: [String, Number],
     height: [String, Number],
+    mapData: Array
   },
-  data() {
+   data() {
     return {
       mapPath: [
         {
@@ -197,7 +198,7 @@ export default {
           name: "虹口",
           color: "",
           areaInclude: true,
-          textP: [148, 132],
+          textP: [148, 130],
           path:
             "M150.844,119.236 C150.844,119.228 150.844,119.216 150.844,119.202 C150.844,119.216 150.844,119.228 150.844,119.236 zM150.844,119.239 C150.844,119.247 150.844,119.251 150.844,119.251 L149.869,120.097 L149.570,120.061 L149.594,120.867 C149.594,120.867 148.644,122.255 149.302,122.800 C149.959,123.345 151.279,124.584 151.279,124.584 C151.279,124.584 151.702,125.079 151.660,125.624 C151.618,126.169 152.338,126.863 152.408,127.259 C152.478,127.656 153.991,127.557 153.991,127.557 C153.991,127.557 154.770,128.251 154.726,128.746 C154.683,129.242 154.420,130.233 154.420,130.233 C154.420,130.233 154.088,130.827 154.626,131.273 C155.164,131.719 155.540,132.611 155.540,132.611 L155.580,133.949 C155.580,133.949 155.525,134.967 155.525,134.967 C155.207,135.001 154.959,134.984 154.806,134.898 C154.043,134.475 152.975,134.969 152.819,135.321 C152.663,135.674 151.576,135.533 150.833,135.744 C150.517,135.834 150.142,135.976 149.882,136.184 C149.882,136.184 149.873,136.179 149.873,136.179 L149.510,135.733 L148.088,134.990 L147.030,134.692 L146.654,133.800 L146.609,132.314 C146.609,132.314 144.391,129.750 143.714,129.043 C143.037,128.337 142.440,127.408 142.440,127.408 C142.440,127.408 142.528,125.922 142.375,125.178 C142.221,124.435 143.117,123.655 143.201,123.543 C143.285,123.432 143.645,122.317 143.682,122.057 C143.718,121.796 143.305,121.165 143.305,121.165 C143.305,121.165 144.340,119.634 144.340,119.634 C144.349,119.648 144.357,119.662 144.360,119.674 C144.454,120.027 146.359,119.674 146.359,119.674 L149.869,120.097 L150.844,119.251 C150.844,119.251 150.844,119.247 150.844,119.239 zM155.561,134.962 C155.624,134.955 155.689,134.946 155.758,134.934 C155.689,134.946 155.625,134.955 155.561,134.962 zM155.818,134.923 C155.884,134.911 155.952,134.898 156.023,134.883 C155.952,134.898 155.884,134.911 155.818,134.923 zM156.097,134.866 C156.166,134.850 156.236,134.833 156.309,134.814 C156.236,134.833 156.166,134.850 156.097,134.866 zM156.398,134.790 C156.468,134.771 156.540,134.752 156.613,134.730 C156.540,134.752 156.468,134.771 156.398,134.790 zM156.718,134.699 C156.789,134.678 156.860,134.655 156.933,134.632 C156.860,134.655 156.789,134.677 156.718,134.699 zM157.055,134.592 C157.124,134.569 157.195,134.545 157.267,134.521 C157.195,134.545 157.125,134.569 157.055,134.592 zM157.407,134.472 C157.475,134.447 157.543,134.423 157.613,134.397 C157.543,134.423 157.475,134.447 157.407,134.472 zM157.771,134.338 C157.836,134.314 157.902,134.289 157.969,134.263 C157.902,134.289 157.836,134.314 157.771,134.338 zM158.145,134.194 C158.207,134.169 158.270,134.145 158.332,134.119 C158.270,134.145 158.207,134.169 158.145,134.194 zM158.529,134.039 C158.586,134.016 158.643,133.991 158.701,133.967 C158.643,133.991 158.586,134.016 158.529,134.039 zM158.918,133.875 C158.970,133.853 159.022,133.830 159.074,133.808 C159.022,133.830 158.970,133.853 158.918,133.875 zM159.347,133.688 C159.347,133.688 159.347,133.688 159.347,133.688 C159.335,133.693 159.323,133.699 159.311,133.704 C159.323,133.699 159.335,133.693 159.347,133.688 zM150.808,116.828 C150.808,116.828 150.808,116.828 150.808,116.828 C150.836,117.922 150.843,118.953 150.844,119.196 C150.842,118.950 150.836,117.919 150.808,116.828 z",
         },
@@ -215,6 +216,7 @@ export default {
       cursorText: 0,
       timer: "",
       timer2: "",
+      timer3: "",
       cursorShow: false,
       cursorPosition: 0,
       dragTarget: null,
@@ -223,30 +225,69 @@ export default {
       clampArray: [0, 1],
       greyBox: ["0%", "100%"],
       followShow: false,
-      filterArray: this.options.data,
+      filterArray: this.mapData,
       diffDirection: true,
-      strip: this.options.barPosition=="side"?'.verticalStrip':'.gradStrip',
       perDistance: 0,
-      baseLength: this.options.barPosition=="side"? this.height: this.width,
       tooltip:{
         name: '',
         x: 0,
         y: 0,
       },
+      loopIdx: 0,
+      toolTipAnimated: false,
     };
   },
   computed: {
     barWidth() {
-      return this.options.gradWidth ? this.options.gradWidth : 20;
+      return this.svgOptions.gradWidth;
     },
+    mapBox() {
+      let mapWidth = this.svgOptions.barPosition=='side'?(this.width - this.barWidth - 80):this.width;
+      let mapHeight = this.svgOptions.barPosition=='side'?this.height:(this.height - this.barWidth - 60);
+      return {
+        x: mapWidth,
+        y: mapHeight
+      };
+    },
+    verticalViewBox() {
+      return '0 0 ' + JSON.stringify(this.barWidth + 80) + ' ' + JSON.stringify(this.height - this.svgOptions.barPad*2);
+    },
+    horizonalViewBox() {
+      return '0 0 ' + JSON.stringify(this.width - this.svgOptions.barPad*2) + ' ' + JSON.stringify(this.barWidth + 60);
+    },
+    svgOptions(){
+      return Object.assign({
+        colorGradient: ["#063574", "#92cffe"],
+        range: [0, 150],
+        highlight: "#06f092",
+        gradWidth: 10,
+        barPosition: "",
+        barPad: 10,
+        barRadius: 5,
+        barBackground: "#ccc"
+      }, this.options)
+    },
+    strip(){
+      return this.svgOptions.barPosition=="side"?'.verticalStrip':'.gradStrip';
+    },
+    baseLength(){
+      return this.svgOptions.barPosition=="side"? this.height: this.width;
+    }
   },
   created() {
     for (let i = 0; i < this.mapPath.length; i++) {
-      this.mapPath[i].color = this.gradColor(this.options.data[i].number);
+      this.mapPath[i].color = this.gradColor(this.mapData[i].number);
       this.mapColor[i] = this.mapPath[i].color;
     }
+    this.mapData.sort((a,b)=>{
+      let c = a.zIndex?a.zIndex:0;
+      let d = b.zIndex?b.zIndex:0;
+      return c - d;
+    });
   },
-  mounted() {},
+  mounted() {
+    this.toolTipLoop(1000);
+  },
   watch: {
     filterArray: function(a, b) {
       let diffArray = a.concat(b).filter(v => !a.includes(v) || !b.includes(v));
@@ -259,7 +300,7 @@ export default {
         );
         if(this.diffDirection){
           this.mapPath[idx].areaInclude = false;
-          this.mapPath[idx].color = this.options.barBackground;
+          this.mapPath[idx].color = this.svgOptions.barBackground;
         } else {
           this.mapPath[idx].areaInclude = true;
           this.mapPath[idx].color = this.mapColor[idx];
@@ -289,8 +330,8 @@ export default {
       return rgb;
     },
     gradColor(number) {
-      const range = this.options.range;
-      const colorGradient = this.options.colorGradient;
+      const range = this.svgOptions.range;
+      const colorGradient = this.svgOptions.colorGradient;
       number = Math.max(number, range[0]);
       number = Math.min(number, range[1]);
       const rangeDiff = range[1] - range[0];
@@ -356,23 +397,27 @@ export default {
       this.cursorShow = true;
       this.cursorText = num;
       this.tooltip.name = name;
-      this.cursorPosition =((num - this.options.range[0]) / (this.options.range[1] - this.options.range[0])) * 100;
-      this.mapPath[idx].color = this.options.highlight;
+      this.cursorPosition =((num - this.svgOptions.range[0]) / (this.svgOptions.range[1] - this.svgOptions.range[0])) * 100;
+      this.mapPath[idx].color = this.svgOptions.highlight;
     },
-    cursorOut(idx) {
+    cursorOut(idx, noFade) {
       if(this.mapPath[idx].areaInclude){
         this.mapPath[idx].color = this.mapColor[idx];
       } else {
-        this.mapPath[idx].color = this.options.barBackground;
+        this.mapPath[idx].color = this.svgOptions.barBackground;
       }
-      this.timer = setTimeout(() => {
-        this.cursorShow = false;
-      }, 400);
+      if(noFade){
+        clearTimeout(this.timer);
+      }else{
+        // this.timer = setTimeout(() => {
+        //   this.cursorShow = false;
+        // }, 1000);
+      }
     },
     numberShow(num) {
       return Math.floor(
-        num * (this.options.range[1] - this.options.range[0]) +
-          this.options.range[0]
+        num * (this.svgOptions.range[1] - this.svgOptions.range[0]) +
+          this.svgOptions.range[0]
       );
     },
     cursorDown(evt) {
@@ -389,7 +434,7 @@ export default {
         pt.x = evt.clientX;
         pt.y = evt.clientY;
         pt = pt.matrixTransform(svg.getScreenCTM().inverse());
-        if(this.options.barPosition=='side'){
+        if(this.svgOptions.barPosition=='side'){
           mp = pt.y;
           Regex = /translateY\((-?\d+(?:\.\d*)?)%\)/;
         } else {
@@ -419,15 +464,15 @@ export default {
         let transText = "translateX(";
         // const transAdd = " scaleY(-1)";
         let rangeFilter = [
-          this.clampArray[0] * (this.options.range[1] - this.options.range[0]) +
-            this.options.range[0],
-          this.clampArray[1] * (this.options.range[1] - this.options.range[0]) +
-            this.options.range[0],
+          this.clampArray[0] * (this.svgOptions.range[1] - this.svgOptions.range[0]) +
+            this.svgOptions.range[0],
+          this.clampArray[1] * (this.svgOptions.range[1] - this.svgOptions.range[0]) +
+            this.svgOptions.range[0],
         ];
         pt.x = evt.clientX;
         pt.y = evt.clientY;
         pt = pt.matrixTransform(svg.getScreenCTM().inverse());
-        if(this.options.barPosition=='side'){
+        if(this.svgOptions.barPosition=='side'){
           mp = pt.y;
           transText = "translateY(";
         } else {
@@ -452,12 +497,42 @@ export default {
           this.clampArray[0] * 100 + "%",
           (this.clampArray[1] - this.clampArray[0]) * 100 + "%",
         ];
-        this.filterArray = this.options.data.filter(
+        this.filterArray = this.mapData.filter(
           item => item.number >= rangeFilter[0] && item.number <= rangeFilter[1]
         );
-        // console.log(filterArray);
       }
     },
+    toolTip_base(idx){
+      this.cursorIn(this.mapData[idx].number, idx, this.mapData[idx].name)
+      this.tooltip.x = this.textXMatch(this.mapData[idx].name);
+      this.tooltip.y = this.textYMatch(this.mapData[idx].name);
+    },
+    toolTipLoop(interval){
+      this.toolTipAnimated = true;
+      this.followShow = true;
+      this.timer3 = setInterval(() => {
+        if(this.loopIdx<16){
+          this.loopIdx++;
+          if(this.loopIdx===16){
+            // this.cursorIn(this.mapData[i].number, i, this.mapData[i].name)
+            this.toolTip_base(0)
+          }else{
+            this.toolTip_base(this.loopIdx)
+          }
+        }else{
+          this.loopIdx = 1;
+          this.toolTip_base(this.loopIdx)
+        }
+        this.cursorOut(this.loopIdx - 1, true);
+        
+      }, interval)
+    },
+    toolTipLoopStop(){
+      this.toolTipAnimated = false;
+      this.cursorOut(this.loopIdx, true);
+      clearInterval(this.timer3);
+      this.followShow = true;
+    }
   },
   components: {},
 };
@@ -471,11 +546,13 @@ export default {
     position: absolute;
     padding: 10px;
     background-color: rgba(0, 0, 0, 0.6);
-    transform: translate(0%, -100%);
+    transform: translate(calc(0% + 10px), calc(-10px - 100%));
     color: #fff;
     border-radius: 4px;
-    /* transition: all ease-out 100ms; */
     pointer-events: none;
+  }
+  .map_container>.tooltip.animated{
+    transition: all ease-out 500ms;
   }
   .map_container>svg{
     display: inline-block;
@@ -504,17 +581,18 @@ export default {
     text-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
   }
   svg .mapName_zoom {
-    font-size: 8px;
+    font-size: 7px;
     stroke-width: 0.25px;
   }
+  svg .zoom>g{
+    position: relative;
+  }
   .gradStrip {
-    padding: 10px;
-    width: calc(100% - 20px);
+    width: 100%;
   }
   .verticalStrip{
     transform: scaleY(-1);
-    padding: 10px 0;
-    height: calc(100% - 20px);
+    height: 100%;
   }
   .gradStrip text, .verticalStrip text {
     alignment-baseline: hanging;
@@ -553,9 +631,4 @@ export default {
     text-anchor: start;
     transform: scaleY(-1) translateX(56px);
   }
-  .verticalStrip #rect1, .verticalStrip #rect2{
-    /* height: calc(100% -20px); */
-    /* height: 100%; */
-  }
-
 </style>

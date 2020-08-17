@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <svgmap :options="map" :width="500" :height="300"></svgmap>
+    <svgmap :mapData="data" :width="500" :height="400" :options="map"></svgmap>
   </div>
 </template>
 
@@ -59,7 +59,8 @@ export default {
       {
         name: "静安",
         number: 20,
-        zoom: true
+        zoom: true,
+        zIndex: 1,
       },
       {
         name: "长宁",
@@ -79,7 +80,8 @@ export default {
       {
         name: "虹口",
         number: 46,
-        zoom: true
+        zoom: true,
+        zIndex: 2,
       },
       {
         name: "杨浦",
@@ -88,16 +90,11 @@ export default {
       }
     ];
     return {
+      data: mapData,
       map: {
-        colorGradient: ["#063574", "#92cffe"],
-        range: [0, 150],
-        highlight: "#06f092",
-        gradWidth: 10,
-        data: mapData,
         barPosition: "side",
-        barRadius: 5,
-        barBackground: "#ccc"
-      },
+        barPad: 20,
+      }
     };
   },
 };
