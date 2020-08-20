@@ -1,6 +1,7 @@
 <template>
   <div class="home">
-    <svgmap :mapData="data" :width="500" :height="400" :options="map"></svgmap>
+    <!-- <svg-map-sh :mapData="data" :width="500" :height="400" :options="map"></svg-map-sh> -->
+    <svgmap :mapData="data" :width="600" :height="500" :options="map"></svgmap>
   </div>
 </template>
 
@@ -93,7 +94,8 @@ export default {
       data: mapData,
       map: {
         barPosition: "side",
-        barPad: 20,
+        barPad: 100,
+        barShow: true
       }
     };
   },
