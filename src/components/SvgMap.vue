@@ -1,13 +1,13 @@
 <template>
   <div class="map_container" :style="{ width: width + 'px', height: height + 'px' }">
-    <svg viewBox="0 0 368 268" :width="mapBox.width" :height="mapBox.height" class="map_content" @mousemove="cursorFollow">
-      <g id="shmap" @mouseenter="toolTipLoopStop" @mouseleave="toolTipLoop(1000)">
+    <svg viewBox="0 0 368 268" :width="mapBox.width" :height="mapBox.height" class="map_content">
+      <g id="shmap" @mouseenter="toolTipLoopStop" @mouseleave="toolTipLoop(1000)" @mousemove="cursorFollow">
         <g v-for="(map, index) in mapData" :key="'group1_' + index" @mouseenter="cursorIn(map.number, index, map.name)" @mouseleave="cursorOut(index)" :id="map.name">
           <path :d="pathMatch(map.name)" :fill="mapPath[index].color" stroke="rgb(255,255,255)" stroke-width="0.6" stroke-linejoin="round" />
           <text :x="textXMatch(map.name)" :y="textYMatch(map.name)" class="mapName" v-if="!map.zoom">{{ map.name }}</text>
         </g>
       </g>
-      <g id="zoom" @mouseenter="toolTipLoopStop" @mouseleave="toolTipLoop(1000)" :style="zoomStyle">
+      <g id="zoom" @mouseenter="toolTipLoopStop" @mouseleave="toolTipLoop(1000)" :style="zoomStyle" @mousemove="cursorFollow">
         <template v-for="(zoom, index) in mapData">
           <g :key="'group2_' + index" v-if="zoom.zoom" @mouseenter="cursorIn(zoom.number, index, zoom.name)" @mouseleave="cursorOut(index)" :id="zoom.name + '_zoom'">
             <path :d="pathMatch(zoom.name)" :fill="mapPath[index].color" stroke="#FFFFFF" stroke-width="0.6" stroke-linejoin="round"/>
@@ -544,7 +544,6 @@ export default {
     },
     toolTipLoop(interval){
       this.toolTipAnimated = true;
-      this.followShow = true;
       this.timer3 = setInterval(() => {
         if(this.loopIdx<16){
           this.loopIdx++;
@@ -566,7 +565,6 @@ export default {
       this.toolTipAnimated = false;
       this.cursorOut(this.loopIdx, true);
       clearInterval(this.timer3);
-      this.followShow = true;
     },
   },
   beforeDestroy() {
