@@ -374,7 +374,7 @@ export default {
           this.hexToRgb(colorGradient[0])[index];
       }
       gradDiff.forEach((element) => {
-        gradDiff[i] = element * per + this.hexToRgb(colorGradient[0])[i];
+        gradDiff[i] = Math.floor(element * per) + this.hexToRgb(colorGradient[0])[i];
         i++;
       });
       // console.log(per,rangeDiff,gradDiff);
